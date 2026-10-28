@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Glass — Live Weather Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=SF+Pro+Display:wght@300;400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+</head>
+<body>
+
+  <!-- Animated background -->
+  <div class="bg-scene" id="bgScene">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <canvas id="particleCanvas"></canvas>
+  </div>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar glass-panel">
+      <div class="logo">
+        <i class="fa-solid fa-cloud-sun"></i>
+        <span>WeatherGlass</span>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap glass-inset">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          id="cityInput"
+          type="text"
+          placeholder="Search city…"
+          autocomplete="off"
+        />
+        <button id="searchBtn" class="search-btn">Go</button>
+      </div>
+      <div id="suggestions" class="suggestions"></div>
+
+      <!-- Saved locations -->
+      <div class="section-label">Saved Locations</div>
+      <ul class="saved-list" id="savedList"></ul>
+
+      <!-- Units toggle -->
+      <div class="unit-toggle glass-inset">
+        <button class="unit-btn active" data-unit="metric">°C</button>
+        <button class="unit-btn" data-unit="imperial">°F</button>
+      </div>
+
+      <div class="sidebar-footer">
+        <span>Data refreshes every 10 min</span>
+        <span id="lastUpdated"></span>
+      </div>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <main class="main-content">
+
+      <!-- Header row -->
+      <header class="top-bar">
+        <div class="location-pill glass-pill">
+          <i class="fa-solid fa-location-dot"></i>
+          <span id="currentCityLabel">Loading…</span>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn glass-pill" id="refreshBtn" title="Refresh">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button class="icon-btn glass-pill" id="addSaveBtn" title="Save location">
+            <i class="fa-regular fa-bookmark"></i>
+          </button>
+          <button class="icon-btn glass-pill" id="themeBtn" title="Toggle theme">
+            <i class="fa-solid fa-circle-half-stroke"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ── Hero card ── -->
+      <section class="hero-card glass-card liquid-border" id="heroCard">
+        <div class="hero-left">
+          <div class="hero-date" id="heroDate"></div>
+          <div class="hero-temp-wrap">
+            <span class="hero-temp" id="heroTemp">--</span>
+            <span class="hero-unit" id="heroUnit">°C</span>
+          </div>
+          <div class="hero-desc" id="heroDesc">Fetching weather…</div>
+          <div class="hero-feels">
+            Feels like <span id="heroFeels">--</span>
+            &nbsp;·&nbsp; High <span id="heroHigh">--</span>
+            &nbsp;·&nbsp; Low <span id="heroLow">--</span>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="hero-icon-wrap">
+            <div class="hero-weather-icon" id="heroIcon">
+              <canvas id="weatherAnimCanvas" width="180" height="180"></canvas>
+            </div>
+          </div>
+          <div class="aqi-chip glass-inset" id="aqiChip">
+            <span class="aqi-dot" id="aqiDot"></span>
+            AQI <strong id="aqiVal">--</strong>
+            <span id="aqiLabel"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Metrics row ── -->
+      <div class="metrics-row">
+        <div class="metric-card glass-card" id="mc-wind">
+          <div class="metric-icon"><i class="fa-solid fa-wind"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Wind</span>
+            <span class="metric-val" id="windVal">--</span>
+            <span class="metric-sub" id="windDir">--</span>
+          </div>
+          <div class="metric-gauge" id="windGauge"></div>
+        </div>
+        <div class="metric-card glass-card" id="mc-hum">
+          <div class="metric-icon"><i class="fa-solid fa-droplet"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Humidity</span>
+            <span class="metric-val" id="humVal">--</span>
+            <span class="metric-sub" id="humDesc">--</span>
+          </div>
+          <div class="metric-gauge" id="humGauge"></div>
+        </div>
+        <div class="metric-card glass-card" id="mc-vis">
+          <div class="metric-icon"><i class="fa-solid fa-eye"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Visibility</span>
+            <span class="metric-val" id="visVal">--</span>
+            <span class="metric-sub">km</span>
+          </div>
+        </div>
+        <div class="metric-card glass-card" id="mc-pressure">
+          <div class="metric-icon"><i class="fa-solid fa-gauge"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Pressure</span>
+            <span class="metric-val" id="pressureVal">--</span>
+            <span class="metric-sub">hPa</span>
+          </div>
+        </div>
+        <div class="metric-card glass-card" id="mc-uv">
+          <div class="metric-icon"><i class="fa-solid fa-sun"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">UV Index</span>
+            <span class="metric-val" id="uvVal">--</span>
+            <span class="metric-sub" id="uvDesc">--</span>
+          </div>
+          <div class="uv-bar-wrap">
+            <div class="uv-bar" id="uvBar"></div>
+          </div>
+        </div>
+        <div class="metric-card glass-card" id="mc-sun">
+          <div class="metric-icon"><i class="fa-solid fa-arrows-up-down"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Sun</span>
+            <span class="metric-sub">↑ <span id="sunriseVal">--</span></span>
+            <span class="metric-sub">↓ <span id="sunsetVal">--</span></span>
+          </div>
+          <div class="sun-arc-wrap">
+            <svg class="sun-arc" viewBox="0 0 100 55">
+              <path d="M5 50 Q50 5 95 50" fill="none" stroke="rgba(255,220,80,.3)" stroke-width="2"/>
+              <circle id="sunDot" cx="5" cy="50" r="4" fill="#FFD700"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Hourly forecast ── -->
+      <section class="forecast-section">
+        <div class="section-header">
+          <h2>24-Hour Forecast</h2>
+          <div class="chart-toggle glass-inset">
+            <button class="ct-btn active" data-chart="temp">Temp</button>
+            <button class="ct-btn" data-chart="precip">Precip</button>
+          </div>
+        </div>
+        <div class="hourly-scroll glass-card">
+          <div class="hourly-list" id="hourlyList"></div>
+          <div class="hourly-chart-wrap">
+            <canvas id="hourlyChart" height="90"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 7-day forecast ── -->
+      <section class="forecast-section">
+        <div class="section-header">
+          <h2>7-Day Forecast</h2>
+        </div>
+        <div class="daily-grid" id="dailyGrid"></div>
+      </section>
+
+      <!-- ── Map + extra row ── -->
+      <div class="bottom-row">
+        <div class="glass-card radar-card">
+          <div class="section-header">
+            <h2>Radar Map</h2>
+            <span class="live-chip">LIVE</span>
+          </div>
+          <div class="radar-map" id="radarMap">
+            <div class="map-overlay">
+              <div class="map-city-dot"></div>
+              <span class="map-city-label" id="mapCityLabel">City</span>
+            </div>
+            <div class="radar-rings">
+              <div class="ring r1"></div>
+              <div class="ring r2"></div>
+              <div class="ring r3"></div>
+            </div>
+            <div class="radar-sweep"></div>
+          </div>
+        </div>
+
+        <div class="glass-card pollen-card">
+          <div class="section-header"><h2>Environmental</h2></div>
+          <div class="env-list" id="envList"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
